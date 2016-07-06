@@ -101,7 +101,7 @@ public class CommandLineArgs {
     public int getSection() {
         return section;
     }
-    
+
     public static final String CONSISTENT_SCAN = "--consistentScan";
     @Parameter(names = CONSISTENT_SCAN, description = "Use this flag to use strongly consistent scan. If the flag is not used it will default to eventually consistent scan")
     private boolean consistentScan = false;

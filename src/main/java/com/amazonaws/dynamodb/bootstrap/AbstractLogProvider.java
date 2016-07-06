@@ -45,7 +45,7 @@ public abstract class AbstractLogProvider {
 
     /**
      * Shuts the thread pool down.
-     * 
+     *
      * @param <awaitTermination>
      *            If true, this method waits for the threads in the pool to
      *            finish. If false, this thread pool shuts down without

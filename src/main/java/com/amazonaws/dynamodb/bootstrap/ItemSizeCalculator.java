@@ -25,7 +25,7 @@ import com.amazonaws.services.dynamodbv2.model.ScanResult;
 
 /**
  * Class used to calculate the size of a DynamoDB item in bytes.
- * 
+ *
  */
 public class ItemSizeCalculator {
 
@@ -47,7 +47,7 @@ public class ItemSizeCalculator {
         }
         return size;
     }
-    
+
     public static int calculateScanResultSizeInBytes(ScanResult result) {
         final Iterator<Map<String, AttributeValue>> it = result.getItems().iterator();
         int totalBytes = 0;

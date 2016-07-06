@@ -43,7 +43,7 @@ public class DynamoDBBootstrapWorker extends AbstractLogProvider {
     /**
      * Creates the DynamoDBBootstrapWorker, calculates the number of segments a
      * table should have, and creates a thread pool to prepare to scan.
-     * 
+     *
      * @throws Exception
      */
     public DynamoDBBootstrapWorker(AmazonDynamoDBClient client,
@@ -71,7 +71,7 @@ public class DynamoDBBootstrapWorker extends AbstractLogProvider {
      * Creates the DynamoDBBootstrapWorker, calculates the number of segments a
      * table should have, and creates a thread pool to prepare to scan using an
      * eventually consistent scan.
-     * 
+     *
      * @throws Exception
      */
     public DynamoDBBootstrapWorker(AmazonDynamoDBClient client,
@@ -128,7 +128,7 @@ public class DynamoDBBootstrapWorker extends AbstractLogProvider {
      * table, which should need many more segments in order to scan the table
      * fast enough in parallel so that one worker does not finish long before
      * other workers.
-     * 
+     *
      * @throws NullReadCapacityException
      *             if the table returns a null readCapacity units.
      */
