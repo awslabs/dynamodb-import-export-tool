@@ -17,7 +17,7 @@ package com.amazonaws.dynamodb.bootstrap;
 import java.util.concurrent.Callable;
 
 import com.amazonaws.dynamodb.bootstrap.constants.BootstrapConstants;
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.model.ConsumedCapacity;
 import com.amazonaws.services.dynamodbv2.model.ScanRequest;
 import com.amazonaws.services.dynamodbv2.model.ScanResult;
@@ -34,10 +34,10 @@ public class ScanSegmentWorker implements Callable<SegmentedScanResult> {
     private boolean hasNext;
     private int lastConsumedCapacity;
     private long exponentialBackoffTime;
-    private final AmazonDynamoDBClient client;
+    private final AmazonDynamoDB client;
     private final RateLimiter rateLimiter;
 
-    ScanSegmentWorker(final AmazonDynamoDBClient client,
+    ScanSegmentWorker(final AmazonDynamoDB client,
             final RateLimiter rateLimiter, ScanRequest request) {
         this.request = request;
         this.client = client;

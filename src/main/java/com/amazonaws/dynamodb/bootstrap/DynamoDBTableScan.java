@@ -16,7 +16,7 @@ package com.amazonaws.dynamodb.bootstrap;
 
 import java.util.concurrent.Executor;
 
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.model.ScanRequest;
 import com.google.common.util.concurrent.RateLimiter;
 
@@ -26,12 +26,12 @@ import com.google.common.util.concurrent.RateLimiter;
 public class DynamoDBTableScan {
 
     private final RateLimiter rateLimiter;
-    private final AmazonDynamoDBClient client;
+    private final AmazonDynamoDB client;
 
     /**
      * Initializes the RateLimiter and sets the AmazonDynamoDBClient.
      */
-    public DynamoDBTableScan(double rateLimit, AmazonDynamoDBClient client) {
+    public DynamoDBTableScan(double rateLimit, AmazonDynamoDB client) {
         rateLimiter = RateLimiter.create(rateLimit);
         this.client = client;
     }

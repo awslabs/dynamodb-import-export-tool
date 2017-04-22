@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 
 import com.amazonaws.dynamodb.bootstrap.constants.BootstrapConstants;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
 import com.amazonaws.services.dynamodbv2.model.BatchWriteItemRequest;
 import com.amazonaws.services.dynamodbv2.model.BatchWriteItemResult;
@@ -33,7 +34,7 @@ import com.google.common.util.concurrent.RateLimiter;
  */
 public class DynamoDBConsumerWorker implements Callable<Void> {
 
-    private final AmazonDynamoDBClient client;
+    private final AmazonDynamoDB client;
     private final RateLimiter rateLimiter;
     private long exponentialBackoffTime;
     private BatchWriteItemRequest batch;
@@ -45,7 +46,7 @@ public class DynamoDBConsumerWorker implements Callable<Void> {
      * off until it succeeds.
      */
     public DynamoDBConsumerWorker(BatchWriteItemRequest batchWriteItemRequest,
-            AmazonDynamoDBClient client, RateLimiter rateLimiter,
+            AmazonDynamoDB client, RateLimiter rateLimiter,
             String tableName) {
         this.batch = batchWriteItemRequest;
         this.client = client;

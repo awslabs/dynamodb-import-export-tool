@@ -23,6 +23,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
 import com.amazonaws.dynamodb.bootstrap.constants.BootstrapConstants;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.BatchWriteItemRequest;
@@ -38,15 +39,14 @@ import com.google.common.util.concurrent.RateLimiter;
  */
 public class DynamoDBConsumer extends AbstractLogConsumer {
 
-    private final AmazonDynamoDBClient client;
+    private final AmazonDynamoDB client;
     private final String tableName;
     private final RateLimiter rateLimiter;
 
     /**
      * Class to consume logs and write them to a DynamoDB table.
      */
-    public DynamoDBConsumer(AmazonDynamoDBClient client, String tableName,
-            double rateLimit, ExecutorService exec) {
+    public DynamoDBConsumer(AmazonDynamoDB client, String tableName, double rateLimit, ExecutorService exec) {
         this.client = client;
         this.tableName = tableName;
         this.rateLimiter = RateLimiter.create(rateLimit);
