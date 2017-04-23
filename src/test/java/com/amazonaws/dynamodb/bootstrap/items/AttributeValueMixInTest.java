@@ -12,9 +12,9 @@
  * express or implied. See the License for the specific language governing
  * permissions and limitations under the License.
  */
-package com.amazonaws.dynamodb.bootstrap;
+package com.amazonaws.dynamodb.bootstrap.items;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertTrue;
 
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -30,7 +30,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * Unit test for AttributeValueMixIn
- * 
  */
 public class AttributeValueMixInTest {
 
@@ -57,17 +56,14 @@ public class AttributeValueMixInTest {
         ObjectMapper mapperWith = new ObjectMapper();
         mapperWith.setSerializationInclusion(Include.NON_NULL);
 
-        mapperWith.addMixInAnnotations(AttributeValue.class,
-                AttributeValueMixIn.class);
+        mapperWith.addMixIn(AttributeValue.class, AttributeValueMixIn.class);
 
-        String withMixIn = mapperWith.writeValueAsString(sampleScanResult()
-                .get(0));
+        String withMixIn = mapperWith.writeValueAsString(sampleScanResult().get(0));
 
         ObjectMapper mapperWithout = new ObjectMapper();
         mapperWithout.setSerializationInclusion(Include.NON_NULL);
 
-        String withoutMixIn = mapperWithout
-                .writeValueAsString(sampleScanResult().get(0));
+        String withoutMixIn = mapperWithout.writeValueAsString(sampleScanResult().get(0));
 
         assertTrue(withMixIn.contains(capitalS));
         assertTrue(withoutMixIn.contains(lowercaseS));

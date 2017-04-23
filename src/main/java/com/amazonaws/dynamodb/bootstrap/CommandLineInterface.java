@@ -14,8 +14,9 @@
  */
 package com.amazonaws.dynamodb.bootstrap;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Optional;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -23,26 +24,30 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import com.amazonaws.AmazonServiceException;
+import com.amazonaws.ClientConfiguration;
+import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.client.builder.AwsClientBuilder;
+import com.amazonaws.dynamodb.bootstrap.constants.BootstrapConstants;
+import com.amazonaws.dynamodb.bootstrap.consumer.DynamoDBConsumer;
+import com.amazonaws.dynamodb.bootstrap.exception.NullReadCapacityException;
+import com.amazonaws.dynamodb.bootstrap.exception.SectionOutOfRangeException;
+import com.amazonaws.dynamodb.bootstrap.worker.DynamoDBBootstrapWorker;
 import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
-import com.amazonaws.services.dynamodbv2.model.*;
+import com.amazonaws.services.dynamodbv2.model.DescribeTableRequest;
+import com.amazonaws.services.dynamodbv2.model.ResourceNotFoundException;
+import com.amazonaws.services.dynamodbv2.model.TableDescription;
 import com.amazonaws.waiters.WaiterParameters;
 import com.amazonaws.waiters.WaiterTimedOutException;
 import com.amazonaws.waiters.WaiterUnrecoverableException;
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Optional;
-import lombok.extern.log4j.Log4j;
-
-import com.amazonaws.ClientConfiguration;
-import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
-import com.amazonaws.dynamodb.bootstrap.constants.BootstrapConstants;
-import com.amazonaws.dynamodb.bootstrap.exception.NullReadCapacityException;
-import com.amazonaws.dynamodb.bootstrap.exception.SectionOutOfRangeException;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.ParameterException;
+import com.google.common.base.Preconditions;
+
+import lombok.NonNull;
+import lombok.extern.log4j.Log4j;
 
 /**
  * The interface that parses the arguments, and begins to transfer data from one
@@ -54,115 +59,80 @@ public class CommandLineInterface {
     public static final String ENCOUNTERED_EXCEPTION_WHEN_EXECUTING_TRANSFER = "Encountered exception when executing transfer.";
 
     static AwsClientBuilder.EndpointConfiguration createEndpointConfiguration(Region region, Optional<String> endpoint, String endpointPrefix) {
-        return new AwsClientBuilder.EndpointConfiguration(endpoint.or("https://" + region.getServiceEndpoint(endpointPrefix)), region.getName());
+        return new AwsClientBuilder.EndpointConfiguration(endpoint.orElse("https://" + region.getServiceEndpoint(endpointPrefix)), region.getName());
     }
 
+    @NonNull
     private final AwsClientBuilder.EndpointConfiguration sourceEndpointConfiguration;
+    @NonNull
     private final String sourceTable;
+    @NonNull
     private final AwsClientBuilder.EndpointConfiguration destinationEndpointConfiguration;
+    @NonNull
     private final String destinationTable;
     private final double readThroughputRatio;
     private final double writeThroughputRatio;
     private final int maxWriteThreads;
     private final boolean isConsistentScan;
     private final boolean createDestinationTableIfMissing;
+    private final boolean createAllGsi;
+    private final boolean createAllLsi;
+    @NonNull
+    private final SortedSet<String> includeGsi;
+    @NonNull
+    private final SortedSet<String> includeLsi;
     private final boolean copyStreamSpecification;
     private final int sectionNumber;
     private final int totalSections;
 
     private CommandLineInterface(final CommandLineArgs params) {
-        sourceEndpointConfiguration = createEndpointConfiguration(Region.getRegion(Regions.fromName(params.getSourceSigningRegion())),
-                Optional.fromNullable(params.getSourceEndpoint()), AmazonDynamoDB.ENDPOINT_PREFIX);
+        sourceEndpointConfiguration =
+            createEndpointConfiguration(Region.getRegion(Regions.fromName(params.getSourceSigningRegion())), Optional.ofNullable(params.getSourceEndpoint()),
+                AmazonDynamoDB.ENDPOINT_PREFIX);
         sourceTable = params.getSourceTable();
-        destinationEndpointConfiguration = createEndpointConfiguration(Region.getRegion(Regions.fromName(params.getDestinationSigningRegion())),
-                Optional.fromNullable(params.getDestinationEndpoint()), AmazonDynamoDB.ENDPOINT_PREFIX);
+        destinationEndpointConfiguration =
+            createEndpointConfiguration(Region.getRegion(Regions.fromName(params.getDestinationSigningRegion())), Optional.ofNullable(params.getDestinationEndpoint()),
+                AmazonDynamoDB.ENDPOINT_PREFIX);
         destinationTable = params.getDestinationTable();
         readThroughputRatio = params.getReadThroughputRatio();
         writeThroughputRatio = params.getWriteThroughputRatio();
         maxWriteThreads = params.getMaxWriteThreads();
         isConsistentScan = params.isConsistentScan();
         createDestinationTableIfMissing = params.isCreateDestinationTableIfMissing();
+        createAllGsi = params.isCreateAllGsi();
+        createAllLsi = params.isCreateAllLsi();
+        includeLsi = new TreeSet<>(params.getIncludeLsi());
+        Preconditions.checkArgument(includeLsi.size() == params.getIncludeLsi().size(), "list of LSI names must be unique");
+        includeGsi = new TreeSet<>(params.getIncludeGsi());
+        Preconditions.checkArgument(includeGsi.size() == params.getIncludeGsi().size(), "list of GSI names must be unique");
         copyStreamSpecification = params.isCopyStreamSpecification();
         sectionNumber = params.getSection();
         totalSections = params.getTotalSections();
-    }
-
-    static List<GlobalSecondaryIndex> convertGlobalSecondaryIndexDescriptions(List<GlobalSecondaryIndexDescription> list) {
-        final List<GlobalSecondaryIndex> result = new ArrayList<>(list.size());
-        for (GlobalSecondaryIndexDescription description : list) {
-            result.add(new GlobalSecondaryIndex()
-                    .withIndexName(description.getIndexName())
-                    .withKeySchema(description.getKeySchema())
-                    .withProjection(description.getProjection())
-                    .withProvisionedThroughput(getProvisionedThroughputFromDescription(description.getProvisionedThroughput())));
-        }
-        return result;
-    }
-
-    static List<LocalSecondaryIndex> convertLocalSecondaryIndexDescriptions(List<LocalSecondaryIndexDescription> list) {
-        final List<LocalSecondaryIndex> result = new ArrayList<>(list.size());
-        for (LocalSecondaryIndexDescription description : list) {
-            result.add(new LocalSecondaryIndex()
-                    .withIndexName(description.getIndexName())
-                    .withKeySchema(description.getKeySchema())
-                    .withProjection(description.getProjection()));
-        }
-        return result;
-    }
-
-    @VisibleForTesting
-    static CreateTableRequest convertTableDescriptionToCreateTableRequest(TableDescription description,
-                                                                          String newTableName,
-                                                                          boolean copyStreamSpecification) {
-        List<GlobalSecondaryIndexDescription> gsiDesc = description.getGlobalSecondaryIndexes();
-        List<GlobalSecondaryIndex> gsi = gsiDesc == null ? null : convertGlobalSecondaryIndexDescriptions(gsiDesc);
-        List<LocalSecondaryIndexDescription> lsiDesc = description.getLocalSecondaryIndexes();
-        List<LocalSecondaryIndex> lsi = lsiDesc == null ? null : convertLocalSecondaryIndexDescriptions(lsiDesc);
-        ProvisionedThroughput pt = getProvisionedThroughputFromDescription(description.getProvisionedThroughput());
-        CreateTableRequest ctr = new CreateTableRequest()
-                .withTableName(newTableName)
-                .withProvisionedThroughput(pt)
-                .withAttributeDefinitions(description.getAttributeDefinitions())
-                .withKeySchema(description.getKeySchema())
-                .withGlobalSecondaryIndexes(gsi)
-                .withLocalSecondaryIndexes(lsi);
-        if (copyStreamSpecification) {
-            ctr.withStreamSpecification(description.getStreamSpecification());
-        }
-        return ctr;
-    }
-
-    private static ProvisionedThroughput getProvisionedThroughputFromDescription(ProvisionedThroughputDescription description) {
-        return new ProvisionedThroughput(description.getReadCapacityUnits(), description.getWriteCapacityUnits());
     }
 
     private void bootstrapTable() throws InterruptedException, ExecutionException, SectionOutOfRangeException {
         final ClientConfiguration config = new ClientConfiguration().withMaxConnections(BootstrapConstants.MAX_CONN_SIZE);
 
         final DefaultAWSCredentialsProviderChain credentials = new DefaultAWSCredentialsProviderChain();
-        final AmazonDynamoDB sourceClient = AmazonDynamoDBClientBuilder.standard()
-                .withEndpointConfiguration(sourceEndpointConfiguration)
-                .withCredentials(credentials)
-                .withClientConfiguration(config)
-                .build();
-        final AmazonDynamoDB destinationClient = AmazonDynamoDBClientBuilder.standard()
-                .withEndpointConfiguration(destinationEndpointConfiguration)
-                .withCredentials(credentials)
-                .withClientConfiguration(config)
-                .build();
+        final AmazonDynamoDB sourceClient =
+            AmazonDynamoDBClientBuilder.standard().withEndpointConfiguration(sourceEndpointConfiguration).withCredentials(credentials).withClientConfiguration(config).build();
+        final AmazonDynamoDB destinationClient =
+            AmazonDynamoDBClientBuilder.standard().withEndpointConfiguration(destinationEndpointConfiguration).withCredentials(credentials).withClientConfiguration(config).build();
 
         final TableDescription readTableDescription = sourceClient.describeTable(sourceTable).getTable();
         try {
             destinationClient.describeTable(destinationTable).getTable();
-        } catch(ResourceNotFoundException e) {
-            if(!createDestinationTableIfMissing) {
+        } catch (ResourceNotFoundException e) {
+            if (!createDestinationTableIfMissing) {
                 throw new IllegalArgumentException("Destination table " + destinationTable + " did not exist", e);
             }
             try {
-                destinationClient.createTable(convertTableDescriptionToCreateTableRequest(readTableDescription,
-                        destinationTable, copyStreamSpecification));
+                final TableDescriptionToCreateTableRequestConverter converter =
+                    TableDescriptionToCreateTableRequestConverter.builder().copyStreamSpecification(copyStreamSpecification).newTableName(destinationTable)
+                        .createAllGsi(createAllGsi).gsiToInclude(includeGsi).createAllLsi(createAllLsi).lsiToInclude(includeLsi).build();
+                destinationClient.createTable(converter.apply(readTableDescription));
                 destinationClient.waiters().tableExists().run(new WaiterParameters<>(new DescribeTableRequest(destinationTable)));
-            } catch(WaiterUnrecoverableException | WaiterTimedOutException | AmazonServiceException ase) {
+            } catch (WaiterUnrecoverableException | WaiterTimedOutException | AmazonServiceException ase) {
                 throw new IllegalArgumentException("Unable to create destination table", ase);
             }
         }
@@ -180,8 +150,8 @@ public class CommandLineInterface {
         final double writeThroughput = calculateThroughput(writeTableDescription, writeThroughputRatio, false);
 
         final ExecutorService sourceExec = getThreadPool(numSegments);
-        final DynamoDBBootstrapWorker worker = new DynamoDBBootstrapWorker(sourceClient, readThroughput, sourceTable,
-                sourceExec, sectionNumber, totalSections, numSegments, isConsistentScan);
+        final DynamoDBBootstrapWorker worker =
+            new DynamoDBBootstrapWorker(sourceClient, readThroughput, sourceTable, sourceExec, sectionNumber, totalSections, numSegments, isConsistentScan);
 
         final ExecutorService destinationExec = getThreadPool(maxWriteThreads);
         final DynamoDBConsumer consumer = new DynamoDBConsumer(destinationClient, destinationTable, writeThroughput, destinationExec);
@@ -194,7 +164,7 @@ public class CommandLineInterface {
     /**
      * Main class to begin transferring data from one DynamoDB table to another
      * DynamoDB table.
-     * 
+     *
      * @param args
      */
     public static void main(String[] args) {
@@ -222,13 +192,10 @@ public class CommandLineInterface {
         } catch (InterruptedException e) {
             log.error("Interrupted when executing transfer.", e);
             System.exit(1);
-        } catch (ExecutionException e) {
-            log.error(ENCOUNTERED_EXCEPTION_WHEN_EXECUTING_TRANSFER, e);
-            System.exit(1);
         } catch (SectionOutOfRangeException e) {
             log.error("Invalid section parameter", e);
             System.exit(1);
-        } catch (Exception e) {
+        } catch (Exception e) { //coalesces ExecutionException
             log.error(ENCOUNTERED_EXCEPTION_WHEN_EXECUTING_TRANSFER, e);
             System.exit(1);
         }
@@ -238,9 +205,7 @@ public class CommandLineInterface {
      * returns the provisioned throughput based on the input ratio and the
      * specified DynamoDB table provisioned throughput.
      */
-    private static double calculateThroughput(
-            TableDescription tableDescription, double throughputRatio,
-            boolean read) {
+    private static double calculateThroughput(TableDescription tableDescription, double throughputRatio, boolean read) {
         if (read) {
             return tableDescription.getProvisionedThroughput().getReadCapacityUnits() * throughputRatio;
         }
@@ -256,10 +221,8 @@ public class CommandLineInterface {
             corePoolSize = maxWriteThreads - 1;
         }
         final long keepAlive = BootstrapConstants.DYNAMODB_CLIENT_EXECUTOR_KEEP_ALIVE;
-        ExecutorService exec = new ThreadPoolExecutor(corePoolSize,
-                maxWriteThreads, keepAlive, TimeUnit.MILLISECONDS,
-                new ArrayBlockingQueue<Runnable>(maxWriteThreads),
-                new ThreadPoolExecutor.CallerRunsPolicy());
+        ExecutorService exec = new ThreadPoolExecutor(corePoolSize, maxWriteThreads, keepAlive, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<Runnable>(maxWriteThreads),
+            new ThreadPoolExecutor.CallerRunsPolicy());
         return exec;
     }
 

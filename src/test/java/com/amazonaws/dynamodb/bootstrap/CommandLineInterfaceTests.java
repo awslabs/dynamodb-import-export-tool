@@ -14,28 +14,8 @@
  */
 package com.amazonaws.dynamodb.bootstrap;
 
-import java.util.Map;
-
-import com.amazonaws.services.dynamodbv2.model.AttributeValue;
-
 /**
- * Encapsulates DynamoDBEntry with the size of the entry.
+ * Created by amcp on 2017/04/23.
  */
-public class DynamoDBEntryWithSize {
-
-    private Map<String, AttributeValue> entry;
-    private int size;
-
-    public DynamoDBEntryWithSize(Map<String, AttributeValue> entry, int size) {
-        this.entry = entry;
-        this.size = size;
-    }
-
-    public int getSize() {
-        return size;
-    }
-
-    public Map<String, AttributeValue> getEntry() {
-        return entry;
-    }
+public class CommandLineInterfaceTests {
 }

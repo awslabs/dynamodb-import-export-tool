@@ -12,13 +12,18 @@
  * express or implied. See the License for the specific language governing
  * permissions and limitations under the License.
  */
-package com.amazonaws.dynamodb.bootstrap;
+package com.amazonaws.dynamodb.bootstrap.worker;
 
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import com.amazonaws.dynamodb.bootstrap.AbstractLogProvider;
+import com.amazonaws.dynamodb.bootstrap.DynamoDBTableScan;
+import com.amazonaws.dynamodb.bootstrap.ParallelScanExecutor;
+import com.amazonaws.dynamodb.bootstrap.SegmentedScanResult;
 import com.amazonaws.dynamodb.bootstrap.constants.BootstrapConstants;
+import com.amazonaws.dynamodb.bootstrap.consumer.AbstractLogConsumer;
 import com.amazonaws.dynamodb.bootstrap.exception.NullReadCapacityException;
 import com.amazonaws.dynamodb.bootstrap.exception.SectionOutOfRangeException;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
@@ -43,16 +48,13 @@ public class DynamoDBBootstrapWorker extends AbstractLogProvider {
     /**
      * Creates the DynamoDBBootstrapWorker, calculates the number of segments a
      * table should have, and creates a thread pool to prepare to scan.
-     * 
+     *
      * @throws Exception
      */
-    public DynamoDBBootstrapWorker(AmazonDynamoDB client,
-            double rateLimit, String tableName, ExecutorService exec,
-            int section, int totalSections, int numSegments,
-            boolean consistentScan) throws SectionOutOfRangeException {
+    public DynamoDBBootstrapWorker(AmazonDynamoDB client, double rateLimit, String tableName, ExecutorService exec, int section, int totalSections, int numSegments,
+        boolean consistentScan) throws SectionOutOfRangeException {
         if (section > totalSections - 1 || section < 0) {
-            throw new SectionOutOfRangeException(
-                    "Section of scan must be within [0...totalSections-1]");
+            throw new SectionOutOfRangeException("Section of scan must be within [0...totalSections-1]");
         }
 
         this.client = client;
@@ -71,17 +73,14 @@ public class DynamoDBBootstrapWorker extends AbstractLogProvider {
      * Creates the DynamoDBBootstrapWorker, calculates the number of segments a
      * table should have, and creates a thread pool to prepare to scan using an
      * eventually consistent scan.
-     * 
+     *
      * @throws Exception
      */
-    public DynamoDBBootstrapWorker(AmazonDynamoDB client,
-            double rateLimit, String tableName, int numThreads)
-            throws NullReadCapacityException {
+    public DynamoDBBootstrapWorker(AmazonDynamoDB client, double rateLimit, String tableName, int numThreads) throws NullReadCapacityException {
         this.client = client;
         this.rateLimit = rateLimit;
         this.tableName = tableName;
-        TableDescription description = client.describeTable(tableName)
-                .getTable();
+        TableDescription description = client.describeTable(tableName).getTable();
         this.section = 0;
         this.totalSections = 1;
         this.consistentScan = false;
@@ -98,19 +97,13 @@ public class DynamoDBBootstrapWorker extends AbstractLogProvider {
      * Begins to pipe the log results by parallel scanning the table and the
      * consumer writing the results.
      */
-    public void pipe(final AbstractLogConsumer consumer)
-            throws ExecutionException, InterruptedException {
-        final DynamoDBTableScan scanner = new DynamoDBTableScan(rateLimit,
-                client);
+    public void pipe(final AbstractLogConsumer consumer) throws ExecutionException, InterruptedException {
+        final DynamoDBTableScan scanner = new DynamoDBTableScan(rateLimit, client);
 
-        final ScanRequest request = new ScanRequest().withTableName(tableName)
-                .withReturnConsumedCapacity(ReturnConsumedCapacity.TOTAL)
-                .withLimit(BootstrapConstants.SCAN_LIMIT)
-                .withConsistentRead(consistentScan);
+        final ScanRequest request = new ScanRequest().withTableName(tableName).withReturnConsumedCapacity(ReturnConsumedCapacity.TOTAL).withLimit(BootstrapConstants.SCAN_LIMIT)
+            .withConsistentRead(consistentScan);
 
-        final ParallelScanExecutor scanService = scanner
-                .getParallelScanCompletionService(request, numSegments,
-                        threadPool, section, totalSections);
+        final ParallelScanExecutor scanService = scanner.getParallelScanCompletionService(request, numSegments, threadPool, section, totalSections);
 
         while (!scanService.finished()) {
             SegmentedScanResult result = scanService.grab();
@@ -128,24 +121,19 @@ public class DynamoDBBootstrapWorker extends AbstractLogProvider {
      * table, which should need many more segments in order to scan the table
      * fast enough in parallel so that one worker does not finish long before
      * other workers.
-     * 
-     * @throws NullReadCapacityException
-     *             if the table returns a null readCapacity units.
+     *
+     * @throws NullReadCapacityException if the table returns a null readCapacity units.
      */
-    public static int estimateNumberOfSegments(TableDescription description)
-            throws NullReadCapacityException {
-        ProvisionedThroughputDescription provisionedThroughput = description
-                .getProvisionedThroughput();
-        double tableSizeInGigabytes = Math.ceil(description.getTableSizeBytes()
-                / BootstrapConstants.GIGABYTE);
+    public static int estimateNumberOfSegments(TableDescription description) throws NullReadCapacityException {
+        ProvisionedThroughputDescription provisionedThroughput = description.getProvisionedThroughput();
+        double tableSizeInGigabytes = Math.ceil(description.getTableSizeBytes() / BootstrapConstants.GIGABYTE);
         Long readCapacity = provisionedThroughput.getReadCapacityUnits();
         Long writeCapacity = provisionedThroughput.getWriteCapacityUnits();
         if (writeCapacity == null) {
             writeCapacity = 1L;
         }
         if (readCapacity == null) {
-            throw new NullReadCapacityException(
-                    "Cannot scan with a null readCapacity provisioned throughput");
+            throw new NullReadCapacityException("Cannot scan with a null readCapacity provisioned throughput");
         }
         double throughput = (readCapacity + 3 * writeCapacity) / 3000.0;
         return 10 * ((int) Math.max(Math.ceil(throughput), Math.ceil(tableSizeInGigabytes) / 10));

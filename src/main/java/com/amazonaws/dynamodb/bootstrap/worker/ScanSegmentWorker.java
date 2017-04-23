@@ -12,11 +12,13 @@
  * express or implied. See the License for the specific language governing
  * permissions and limitations under the License.
  */
-package com.amazonaws.dynamodb.bootstrap;
+package com.amazonaws.dynamodb.bootstrap.worker;
 
 import java.util.concurrent.Callable;
 
+import com.amazonaws.dynamodb.bootstrap.SegmentedScanResult;
 import com.amazonaws.dynamodb.bootstrap.constants.BootstrapConstants;
+import com.amazonaws.dynamodb.bootstrap.items.ItemSizeCalculator;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.model.ConsumedCapacity;
 import com.amazonaws.services.dynamodbv2.model.ScanRequest;
@@ -27,7 +29,6 @@ import com.google.common.util.concurrent.RateLimiter;
  * This class executes multiple scan requests on one segment of a table in
  * series, as a runnable. Instances meant to be used as tasks of the worker
  * thread pool for parallel scans.
- * 
  */
 public class ScanSegmentWorker implements Callable<SegmentedScanResult> {
     private final ScanRequest request;
@@ -37,8 +38,7 @@ public class ScanSegmentWorker implements Callable<SegmentedScanResult> {
     private final AmazonDynamoDB client;
     private final RateLimiter rateLimiter;
 
-    ScanSegmentWorker(final AmazonDynamoDB client,
-            final RateLimiter rateLimiter, ScanRequest request) {
+    public ScanSegmentWorker(final AmazonDynamoDB client, final RateLimiter rateLimiter, ScanRequest request) {
         this.request = request;
         this.client = client;
         this.rateLimiter = rateLimiter;
@@ -59,20 +59,16 @@ public class ScanSegmentWorker implements Callable<SegmentedScanResult> {
         final ConsumedCapacity cc = result.getConsumedCapacity();
 
         if (cc != null && cc.getCapacityUnits() != null) {
-            lastConsumedCapacity = result.getConsumedCapacity()
-                    .getCapacityUnits().intValue();
+            lastConsumedCapacity = result.getConsumedCapacity().getCapacityUnits().intValue();
         } else if (result.getScannedCount() != null && result.getCount() != null) {
 
             final boolean isConsistent = request.getConsistentRead();
-            int itemSize = isConsistent ? BootstrapConstants.STRONGLY_CONSISTENT_READ_ITEM_SIZE
-                    : BootstrapConstants.EVENTUALLY_CONSISTENT_READ_ITEM_SIZE;
+            int itemSize = isConsistent ? BootstrapConstants.STRONGLY_CONSISTENT_READ_ITEM_SIZE : BootstrapConstants.EVENTUALLY_CONSISTENT_READ_ITEM_SIZE;
 
-            lastConsumedCapacity = (result.getScannedCount() / (int) Math.max(1.0, result.getCount()))
-                    * (ItemSizeCalculator.calculateScanResultSizeInBytes(result) / itemSize);
+            lastConsumedCapacity = (result.getScannedCount() / (int) Math.max(1.0, result.getCount())) * (ItemSizeCalculator.calculateScanResultSizeInBytes(result) / itemSize);
         }
 
-        if (result.getLastEvaluatedKey() != null
-                && !result.getLastEvaluatedKey().isEmpty()) {
+        if (result.getLastEvaluatedKey() != null && !result.getLastEvaluatedKey().isEmpty()) {
             hasNext = true;
             request.setExclusiveStartKey(result.getLastEvaluatedKey());
         } else {

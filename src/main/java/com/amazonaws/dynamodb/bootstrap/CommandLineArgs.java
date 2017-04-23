@@ -14,8 +14,11 @@
  */
 package com.amazonaws.dynamodb.bootstrap;
 
+import java.util.List;
+
 import com.amazonaws.dynamodb.bootstrap.constants.BootstrapConstants;
 import com.beust.jcommander.Parameter;
+
 import lombok.Getter;
 
 /**
@@ -60,6 +63,22 @@ public class CommandLineArgs {
     @Parameter(names = CREATE_DESTINATION_TABLE_IF_MISSING, description = "Create destination table if it does not exist")
     private boolean createDestinationTableIfMissing;
 
+    public static final String CREATE_ALL_LSI = "--createAllLsi";
+    @Parameter(names = CREATE_ALL_LSI, description = "Create all LSI in destination table")
+    private boolean createAllLsi;
+
+    public static final String CREATE_ALL_GSI = "--createAllGsi";
+    @Parameter(names = CREATE_ALL_GSI, description = "Create all GSI in destination table")
+    private boolean createAllGsi;
+
+    public static final String INCLUDE_LSI = "--includeLsi";
+    @Parameter(names = INCLUDE_LSI, description = "Include the following LSI in the destination table")
+    private List<String> includeLsi;
+
+    public static final String INCLUDE_GSI = "--includeGsi";
+    @Parameter(names = INCLUDE_GSI, description = "Include the following GSI in the destination table")
+    private List<String> includeGsi;
+
     public static final String COPY_STREAM_SPECIFICATION_WHEN_CREATING = "--copyStreamSpecificationWhenCreating";
     @Parameter(names = COPY_STREAM_SPECIFICATION_WHEN_CREATING, description = "Use the source table stream specification for the destination table during its creation.")
     private boolean copyStreamSpecification;
@@ -83,7 +102,7 @@ public class CommandLineArgs {
     public static final String SECTION = "--section";
     @Parameter(names = SECTION, description = "Section number to scan when running multiple programs concurrently [0, 1... totalSections-1]", required = false)
     private int section = 0;
-    
+
     public static final String CONSISTENT_SCAN = "--consistentScan";
     @Parameter(names = CONSISTENT_SCAN, description = "Use this flag to use strongly consistent scan. If the flag is not used it will default to eventually consistent scan")
     private boolean consistentScan = false;

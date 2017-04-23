@@ -34,14 +34,12 @@ public class BootstrapConstants {
     /**
      * Max ThreadPool size for the ExecutorService to use.
      */
-    public static final int DYNAMODB_CLIENT_EXECUTOR_MAX_POOL_SIZE = Runtime
-            .getRuntime().availableProcessors() * 128;
+    public static final int DYNAMODB_CLIENT_EXECUTOR_MAX_POOL_SIZE = Runtime.getRuntime().availableProcessors() * 128;
 
     /**
      * Core pool size of a default thread pool.
      */
-    public static final int DYNAMODB_CLIENT_EXECUTOR_CORE_POOL_SIZE = Runtime
-            .getRuntime().availableProcessors() * 4;
+    public static final int DYNAMODB_CLIENT_EXECUTOR_CORE_POOL_SIZE = Runtime.getRuntime().availableProcessors() * 4;
 
     /**
      * Amount of time in milliseconds to keep the ExecutorService alive for
@@ -89,12 +87,12 @@ public class BootstrapConstants {
      * Max number of bytes in a DynamoDB number attribute.
      */
     public static final int MAX_NUMBER_OF_BYTES_FOR_NUMBER = 21;
-    
+
     /**
      * Number of bytes for an item being read with strongly consistent reads
      */
     public static final int STRONGLY_CONSISTENT_READ_ITEM_SIZE = 4 * 1024;
-    
+
     /**
      * Number of bytes for an item being read with eventually consistent reads
      */

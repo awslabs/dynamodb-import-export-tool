@@ -15,16 +15,17 @@
 package com.amazonaws.dynamodb.bootstrap;
 
 import java.util.BitSet;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.Future;
-import java.util.concurrent.ExecutionException;
+
+import com.amazonaws.dynamodb.bootstrap.worker.ScanSegmentWorker;
 
 /**
  * This class executes multiple scan requests on one segment of a table in
  * series, as a runnable. Instances meant to be used as tasks of the worker
  * thread pool for parallel scans.
- * 
  */
 public class ParallelScanExecutor {
     private final BitSet finished;
@@ -44,8 +45,7 @@ public class ParallelScanExecutor {
     public void finishSegment(int segment) {
         synchronized (finished) {
             if (segment > finished.size()) {
-                throw new IllegalArgumentException(
-                        "Invalid segment passed to finishSegment");
+                throw new IllegalArgumentException("Invalid segment passed to finishSegment");
             }
             finished.set(segment);
         }
@@ -63,15 +63,12 @@ public class ParallelScanExecutor {
     /**
      * This method gets a segmentedScanResult and submits the next scan request
      * for that segment, if there is one.
-     * 
+     *
      * @return the next available ScanResult
-     * @throws ExecutionException
-     *             if one of the segment pages threw while executing
-     * @throws InterruptedException
-     *             if one of the segment pages was interrupted while executing.
+     * @throws ExecutionException   if one of the segment pages threw while executing
+     * @throws InterruptedException if one of the segment pages was interrupted while executing.
      */
-    public SegmentedScanResult grab() throws ExecutionException,
-            InterruptedException {
+    public SegmentedScanResult grab() throws ExecutionException, InterruptedException {
         Future<SegmentedScanResult> ret = exec.take();
 
         int segment = ret.get().getSegment();

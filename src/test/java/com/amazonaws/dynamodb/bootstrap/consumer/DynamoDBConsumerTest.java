@@ -12,16 +12,16 @@
  * express or implied. See the License for the specific language governing
  * permissions and limitations under the License.
  */
-package com.amazonaws.dynamodb.bootstrap;
+package com.amazonaws.dynamodb.bootstrap.consumer;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.powermock.api.easymock.PowerMock.replayAll;
+import static org.powermock.api.easymock.PowerMock.verifyAll;
 
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-
-import static org.powermock.api.easymock.PowerMock.*;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -29,6 +29,7 @@ import org.powermock.core.classloader.annotations.PowerMockIgnore;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
+import com.amazonaws.dynamodb.bootstrap.SegmentedScanResult;
 import com.amazonaws.dynamodb.bootstrap.constants.BootstrapConstants;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.BatchWriteItemRequest;
@@ -36,7 +37,6 @@ import com.amazonaws.services.dynamodbv2.model.ScanResult;
 
 /**
  * Unit tests for DynamoDBConsumerWorker
- * 
  */
 @RunWith(PowerMockRunner.class)
 @PrepareForTest(DynamoDBConsumer.class)
@@ -56,8 +56,7 @@ public class DynamoDBConsumerTest {
         List<Map<String, AttributeValue>> items = new LinkedList<Map<String, AttributeValue>>();
         for (int i = 0; i < numItems; i++) {
             Map<String, AttributeValue> sampleScanResult = new HashMap<String, AttributeValue>();
-            sampleScanResult.put("key", new AttributeValue("attribute value "
-                    + i));
+            sampleScanResult.put("key", new AttributeValue("attribute value " + i));
             items.add(sampleScanResult);
         }
         scanResult.setItems(items);
@@ -65,10 +64,8 @@ public class DynamoDBConsumerTest {
         SegmentedScanResult result = new SegmentedScanResult(scanResult, 0);
 
         replayAll();
-        List<BatchWriteItemRequest> batches = DynamoDBConsumer
-                .splitResultIntoBatches(result.getScanResult(), tableName);
-        assertEquals(Math.ceil(numItems / BootstrapConstants.MAX_BATCH_SIZE_WRITE_ITEM),
-                batches.size(), 0.0);
+        List<BatchWriteItemRequest> batches = DynamoDBConsumer.splitResultIntoBatches(result.getScanResult(), tableName);
+        assertEquals(Math.ceil(numItems / BootstrapConstants.MAX_BATCH_SIZE_WRITE_ITEM), batches.size(), 0.0);
 
         verifyAll();
     }

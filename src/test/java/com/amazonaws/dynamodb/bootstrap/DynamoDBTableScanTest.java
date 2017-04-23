@@ -31,24 +31,23 @@ import org.powermock.core.classloader.annotations.PowerMockIgnore;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
+import com.amazonaws.dynamodb.bootstrap.worker.ScanSegmentWorker;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
 import com.amazonaws.services.dynamodbv2.model.ScanRequest;
 import com.google.common.util.concurrent.RateLimiter;
 
 /**
  * Unit Tests for DynamoDBTableScan
- * 
  */
 @RunWith(PowerMockRunner.class)
-@PrepareForTest({ RateLimiter.class, DynamoDBTableScan.class })
+@PrepareForTest({RateLimiter.class, DynamoDBTableScan.class})
 @PowerMockIgnore("javax.management.*")
 public class DynamoDBTableScanTest {
 
     private static String tableName = "testTableName";
     private static Integer totalSegments = 1;
     private static Integer segment = 0;
-    private static ScanRequest req = new ScanRequest().withTableName(tableName)
-            .withTotalSegments(totalSegments).withSegment(segment);
+    private static ScanRequest req = new ScanRequest().withTableName(tableName).withTotalSegments(totalSegments).withSegment(segment);
     private double rateLimit = 12.3;
 
     /**
@@ -56,8 +55,7 @@ public class DynamoDBTableScanTest {
      * make sure it creates the correct number of segments
      */
     @Test
-    public void testGetParallelExecutorCompletionServiceWithVariousNumberOfSegments()
-            throws Exception {
+    public void testGetParallelExecutorCompletionServiceWithVariousNumberOfSegments() throws Exception {
         int segments = 0;
         ExecutorService mockExec = createMock(ExecutorService.class);
         mockStatic(RateLimiter.class);
@@ -70,22 +68,16 @@ public class DynamoDBTableScanTest {
         ParallelScanExecutor mockScanExecutor = createMock(ParallelScanExecutor.class);
         ScanSegmentWorker mockSegmentWorker = createMock(ScanSegmentWorker.class);
 
-        expectNew(ScanSegmentWorker.class, mockClient, mockRateLimiter, req)
-                .andReturn(mockSegmentWorker);
-        expectNew(ParallelScanExecutor.class, mockExec, 1).andReturn(
-                mockScanExecutor);
+        expectNew(ScanSegmentWorker.class, mockClient, mockRateLimiter, req).andReturn(mockSegmentWorker);
+        expectNew(ParallelScanExecutor.class, mockExec, 1).andReturn(mockScanExecutor);
 
         mockScanExecutor.addWorker(mockSegmentWorker, 0);
 
         int segments2 = 3;
-        ScanRequest testReq = scanner.copyScanRequest(req).withTotalSegments(
-                segments2);
-        expectNew(ParallelScanExecutor.class, mockExec, segments2).andReturn(
-                mockScanExecutor);
+        ScanRequest testReq = scanner.copyScanRequest(req).withTotalSegments(segments2);
+        expectNew(ParallelScanExecutor.class, mockExec, segments2).andReturn(mockScanExecutor);
         for (int i = 0; i < segments2; i++) {
-            expectNew(ScanSegmentWorker.class, mockClient, mockRateLimiter,
-                    scanner.copyScanRequest(testReq).withSegment(i)).andReturn(
-                    mockSegmentWorker);
+            expectNew(ScanSegmentWorker.class, mockClient, mockRateLimiter, scanner.copyScanRequest(testReq).withSegment(i)).andReturn(mockSegmentWorker);
             mockScanExecutor.addWorker(mockSegmentWorker, i);
         }
 
