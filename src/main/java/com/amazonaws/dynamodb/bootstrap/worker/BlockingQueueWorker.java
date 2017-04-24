@@ -12,17 +12,20 @@
  * express or implied. See the License for the specific language governing
  * permissions and limitations under the License.
  */
-package com.amazonaws.dynamodb.bootstrap;
+package com.amazonaws.dynamodb.bootstrap.worker;
 
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Callable;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Callable;
 
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 
+import com.amazonaws.dynamodb.bootstrap.SegmentedScanResult;
+import com.amazonaws.dynamodb.bootstrap.items.DynamoDBEntryWithSize;
+import com.amazonaws.dynamodb.bootstrap.items.ItemSizeCalculator;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ScanResult;
 
@@ -36,14 +39,12 @@ public class BlockingQueueWorker implements Callable<Void> {
     /**
      * Logger for the LogStashQueueWorker.
      */
-    private static final Logger LOGGER = LogManager
-            .getLogger(BlockingQueueWorker.class);
+    private static final Logger LOGGER = LogManager.getLogger(BlockingQueueWorker.class);
 
     private final BlockingQueue<DynamoDBEntryWithSize> queue;
     private final SegmentedScanResult result;
 
-    public BlockingQueueWorker(BlockingQueue<DynamoDBEntryWithSize> queue,
-            SegmentedScanResult result) {
+    public BlockingQueueWorker(BlockingQueue<DynamoDBEntryWithSize> queue, SegmentedScanResult result) {
         this.queue = queue;
         this.result = result;
     }
@@ -58,14 +59,11 @@ public class BlockingQueueWorker implements Callable<Void> {
             do {
                 try {
                     Map<String, AttributeValue> item = it.next();
-                    DynamoDBEntryWithSize entryWithSize = new DynamoDBEntryWithSize(
-                            item,
-                            ItemSizeCalculator.calculateItemSizeInBytes(item));
+                    DynamoDBEntryWithSize entryWithSize = new DynamoDBEntryWithSize(item, ItemSizeCalculator.calculateItemSizeInBytes(item));
                     queue.put(entryWithSize);
                 } catch (InterruptedException e) {
                     interrupted = true;
-                    LOGGER.warn("interrupted when writing item to queue: "
-                            + e.getMessage());
+                    LOGGER.warn("interrupted when writing item to queue: " + e.getMessage());
                 }
             } while (it.hasNext());
         } finally {

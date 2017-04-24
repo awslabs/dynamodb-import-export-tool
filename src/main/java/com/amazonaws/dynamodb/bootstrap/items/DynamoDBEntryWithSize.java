@@ -12,27 +12,30 @@
  * express or implied. See the License for the specific language governing
  * permissions and limitations under the License.
  */
-package com.amazonaws.dynamodb.bootstrap;
+package com.amazonaws.dynamodb.bootstrap.items;
 
-import com.amazonaws.services.dynamodbv2.model.ScanResult;
+import java.util.Map;
+
+import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 
 /**
- * Encapsulates segment number in scan result
+ * Encapsulates DynamoDBEntry with the size of the entry.
  */
-public class SegmentedScanResult {
-    private final ScanResult result;
-    private final int segment;
+public class DynamoDBEntryWithSize {
 
-    public SegmentedScanResult(ScanResult result, int segment) {
-        this.result = result;
-        this.segment = segment;
+    private Map<String, AttributeValue> entry;
+    private int size;
+
+    public DynamoDBEntryWithSize(Map<String, AttributeValue> entry, int size) {
+        this.entry = entry;
+        this.size = size;
     }
 
-    public ScanResult getScanResult() {
-        return result;
+    public int getSize() {
+        return size;
     }
 
-    public int getSegment() {
-        return segment;
+    public Map<String, AttributeValue> getEntry() {
+        return entry;
     }
 }

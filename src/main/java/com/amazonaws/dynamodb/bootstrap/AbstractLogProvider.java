@@ -22,6 +22,7 @@ import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 
 import com.amazonaws.dynamodb.bootstrap.constants.BootstrapConstants;
+import com.amazonaws.dynamodb.bootstrap.consumer.AbstractLogConsumer;
 
 /**
  * Abstract class to send inputs from a source to a consumer.
@@ -31,8 +32,7 @@ public abstract class AbstractLogProvider {
     /**
      * Logger for the DynamoDBBootstrapWorker.
      */
-    private static final Logger LOGGER = LogManager
-            .getLogger(AbstractLogProvider.class);
+    private static final Logger LOGGER = LogManager.getLogger(AbstractLogProvider.class);
 
     protected ExecutorService threadPool;
 
@@ -40,16 +40,14 @@ public abstract class AbstractLogProvider {
      * Begins to read log results and transfer them to the consumer who will
      * write the results.
      */
-    public abstract void pipe(final AbstractLogConsumer consumer)
-            throws ExecutionException, InterruptedException;
+    public abstract void pipe(final AbstractLogConsumer consumer) throws ExecutionException, InterruptedException;
 
     /**
      * Shuts the thread pool down.
-     * 
-     * @param <awaitTermination>
-     *            If true, this method waits for the threads in the pool to
-     *            finish. If false, this thread pool shuts down without
-     *            finishing their current tasks.
+     *
+     * @param <awaitTermination> If true, this method waits for the threads in the pool to
+     *                           finish. If false, this thread pool shuts down without
+     *                           finishing their current tasks.
      */
     public void shutdown(boolean awaitTermination) {
         if (awaitTermination) {
@@ -61,8 +59,7 @@ public abstract class AbstractLogProvider {
                 }
             } catch (InterruptedException e) {
                 interrupted = true;
-                LOGGER.warn("Threadpool was interrupted when trying to shutdown: "
-                        + e.getMessage());
+                LOGGER.warn("Threadpool was interrupted when trying to shutdown: " + e.getMessage());
             } finally {
                 if (interrupted)
                     Thread.currentThread().interrupt();

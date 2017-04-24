@@ -16,7 +16,8 @@ package com.amazonaws.dynamodb.bootstrap;
 
 import java.util.concurrent.Executor;
 
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
+import com.amazonaws.dynamodb.bootstrap.worker.ScanSegmentWorker;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.model.ScanRequest;
 import com.google.common.util.concurrent.RateLimiter;
 
@@ -26,12 +27,12 @@ import com.google.common.util.concurrent.RateLimiter;
 public class DynamoDBTableScan {
 
     private final RateLimiter rateLimiter;
-    private final AmazonDynamoDBClient client;
+    private final AmazonDynamoDB client;
 
     /**
      * Initializes the RateLimiter and sets the AmazonDynamoDBClient.
      */
-    public DynamoDBTableScan(double rateLimit, AmazonDynamoDBClient client) {
+    public DynamoDBTableScan(double rateLimit, AmazonDynamoDB client) {
         rateLimiter = RateLimiter.create(rateLimit);
         this.client = client;
     }
@@ -39,19 +40,15 @@ public class DynamoDBTableScan {
     /**
      * This function copies a scan request for the number of segments and then
      * adds those workers to the executor service to begin scanning.
-     * 
+     *
      * @param totalSections
      * @param section
-     * 
      * @return <ParallelScanExecutor> the parallel scan executor to grab results
-     *         when a segment is finished.
+     * when a segment is finished.
      */
-    public ParallelScanExecutor getParallelScanCompletionService(
-            ScanRequest initialRequest, int numSegments, Executor executor,
-            int section, int totalSections) {
+    public ParallelScanExecutor getParallelScanCompletionService(ScanRequest initialRequest, int numSegments, Executor executor, int section, int totalSections) {
         final int segments = Math.max(1, numSegments);
-        final ParallelScanExecutor completion = new ParallelScanExecutor(
-                executor, segments);
+        final ParallelScanExecutor completion = new ParallelScanExecutor(executor, segments);
 
         int sectionSize = segments / totalSections;
         int start = sectionSize * section;
@@ -61,22 +58,15 @@ public class DynamoDBTableScan {
         }
 
         for (int segment = start; segment < end; segment++) {
-            ScanRequest scanSegment = copyScanRequest(initialRequest)
-                    .withTotalSegments(segments).withSegment(segment);
-            completion.addWorker(new ScanSegmentWorker(this.client,
-                    this.rateLimiter, scanSegment), segment);
+            ScanRequest scanSegment = copyScanRequest(initialRequest).withTotalSegments(segments).withSegment(segment);
+            completion.addWorker(new ScanSegmentWorker(this.client, this.rateLimiter, scanSegment), segment);
         }
 
         return completion;
     }
 
     public ScanRequest copyScanRequest(ScanRequest request) {
-        return new ScanRequest()
-                .withTableName(request.getTableName())
-                .withTotalSegments(request.getTotalSegments())
-                .withSegment(request.getSegment())
-                .withReturnConsumedCapacity(request.getReturnConsumedCapacity())
-                .withLimit(request.getLimit())
-                .withConsistentRead(request.getConsistentRead());
+        return new ScanRequest().withTableName(request.getTableName()).withTotalSegments(request.getTotalSegments()).withSegment(request.getSegment())
+            .withReturnConsumedCapacity(request.getReturnConsumedCapacity()).withLimit(request.getLimit()).withConsistentRead(request.getConsistentRead());
     }
 }

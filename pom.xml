@@ -1,7 +1,7 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.amazonaws</groupId>
-    <version>1.0.1</version>
+    <version>1.1.0</version>
     <artifactId>dynamodb-import-export-tool</artifactId>
     <packaging>jar</packaging>
     <name>DynamoDB Import Export Tool</name>
@@ -11,14 +11,17 @@
         <url>https://github.com/awslabs/dynamodb-import-export-tool.git</url>
     </scm>
     <properties>
-        <aws.java.sdk.version>1.10.10</aws.java.sdk.version>
-        <powermock.version>1.6.2</powermock.version>
-        <jcommander.version>1.48</jcommander.version>
-        <guava.version>15.0</guava.version>
+        <jdk.version>1.8</jdk.version>
+        <aws.java.sdk.version>1.11.123</aws.java.sdk.version>
+        <powermock.version>1.6.6</powermock.version>
+        <jcommander.version>1.69</jcommander.version>
+        <guava.version>21.0</guava.version>
         <log4j.core.version>1.2.17</log4j.core.version>
-        <easymock.version>3.2</easymock.version>
+        <easymock.version>3.4</easymock.version>
         <commons.logging.version>1.2</commons.logging.version>
-        <maven.shade.version>2.4.1</maven.shade.version>
+        <maven.shade.version>3.0.0</maven.shade.version>
+        <maven.compiler.version>3.0</maven.compiler.version>
+        <maven.gpg.version>1.6</maven.gpg.version>
         <gpg.skip>true</gpg.skip>
     </properties>
     <developers>
@@ -85,6 +88,11 @@
             <version>${log4j.core.version}</version>
         </dependency>
         <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>1.16.14</version>
+        </dependency>
+        <dependency>
             <groupId>org.powermock</groupId>
             <artifactId>powermock-module-junit4</artifactId>
             <version>${powermock.version}</version>
@@ -109,14 +117,15 @@
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
-                    <source>1.7</source>
-                    <target>1.7</target>
+                    <source>${jdk.version}</source>
+                    <target>${jdk.version}</target>
                 </configuration>
-                <version>3.0</version>
+                <version>${maven.compiler.version}</version>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-gpg-plugin</artifactId>
+                <version>${maven.gpg.version}</version>
                 <executions>
                     <execution>
                         <id>sign-artifacts</id>

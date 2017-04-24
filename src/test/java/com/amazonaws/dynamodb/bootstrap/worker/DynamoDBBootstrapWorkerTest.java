@@ -12,11 +12,13 @@
  * express or implied. See the License for the specific language governing
  * permissions and limitations under the License.
  */
-package com.amazonaws.dynamodb.bootstrap;
+package com.amazonaws.dynamodb.bootstrap.worker;
 
 import static org.easymock.EasyMock.expect;
 import static org.junit.Assert.assertTrue;
 import static org.powermock.api.easymock.PowerMock.createMock;
+import static org.powermock.api.easymock.PowerMock.replayAll;
+import static org.powermock.api.easymock.PowerMock.verifyAll;
 
 import java.util.concurrent.ThreadPoolExecutor;
 
@@ -26,14 +28,11 @@ import org.powermock.core.classloader.annotations.PowerMockIgnore;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
-import static org.powermock.api.easymock.PowerMock.*;
-
 import com.amazonaws.dynamodb.bootstrap.exception.SectionOutOfRangeException;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
 
 /**
  * Unit Tests for DynamoDBBootstrapWorker
- * 
  */
 @RunWith(PowerMockRunner.class)
 @PrepareForTest(DynamoDBBootstrapWorker.class)
@@ -62,12 +61,11 @@ public class DynamoDBBootstrapWorkerTest {
 
         replayAll();
 
-        new DynamoDBBootstrapWorker(mockClient, rateLimit, tableName,
-                mockThreadPool, 0, 1, 10, false);
+        new DynamoDBBootstrapWorker(mockClient, rateLimit, tableName, mockThreadPool, 0, 1, 10, false);
 
         verifyAll();
     }
-    
+
     /**
      * Test the initialization of a DynamoDBBootstrapWorker with an invalid section.
      */
@@ -78,10 +76,9 @@ public class DynamoDBBootstrapWorkerTest {
         replayAll();
         boolean exceptionThrown = false;
 
-        try{
-            new DynamoDBBootstrapWorker(mockClient, rateLimit, tableName,
-                    mockThreadPool, 1, 1, 10, false);
-        }catch (SectionOutOfRangeException e){
+        try {
+            new DynamoDBBootstrapWorker(mockClient, rateLimit, tableName, mockThreadPool, 1, 1, 10, false);
+        } catch (SectionOutOfRangeException e) {
             exceptionThrown = true;
         }
 
@@ -99,8 +96,7 @@ public class DynamoDBBootstrapWorkerTest {
         expect(mockThreadPool.shutdownNow()).andReturn(null);
 
         replayAll();
-        DynamoDBBootstrapWorker worker = new DynamoDBBootstrapWorker(
-                mockClient, rateLimit, tableName, mockThreadPool, 0, 1, 10, false);
+        DynamoDBBootstrapWorker worker = new DynamoDBBootstrapWorker(mockClient, rateLimit, tableName, mockThreadPool, 0, 1, 10, false);
         worker.shutdown(false);
 
         verifyAll();

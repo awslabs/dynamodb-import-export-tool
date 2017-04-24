@@ -12,16 +12,16 @@
  * express or implied. See the License for the specific language governing
  * permissions and limitations under the License.
  */
-package com.amazonaws.dynamodb.bootstrap;
+package com.amazonaws.dynamodb.bootstrap.worker;
 
 import java.util.Iterator;
-import java.util.List;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
 import com.amazonaws.dynamodb.bootstrap.constants.BootstrapConstants;
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.model.BatchWriteItemRequest;
 import com.amazonaws.services.dynamodbv2.model.BatchWriteItemResult;
 import com.amazonaws.services.dynamodbv2.model.ConsumedCapacity;
@@ -33,7 +33,7 @@ import com.google.common.util.concurrent.RateLimiter;
  */
 public class DynamoDBConsumerWorker implements Callable<Void> {
 
-    private final AmazonDynamoDBClient client;
+    private final AmazonDynamoDB client;
     private final RateLimiter rateLimiter;
     private long exponentialBackoffTime;
     private BatchWriteItemRequest batch;
@@ -44,9 +44,7 @@ public class DynamoDBConsumerWorker implements Callable<Void> {
      * table. If the write returns unprocessed items it will exponentially back
      * off until it succeeds.
      */
-    public DynamoDBConsumerWorker(BatchWriteItemRequest batchWriteItemRequest,
-            AmazonDynamoDBClient client, RateLimiter rateLimiter,
-            String tableName) {
+    public DynamoDBConsumerWorker(BatchWriteItemRequest batchWriteItemRequest, AmazonDynamoDB client, RateLimiter rateLimiter, String tableName) {
         this.batch = batchWriteItemRequest;
         this.client = client;
         this.rateLimiter = rateLimiter;
@@ -84,8 +82,7 @@ public class DynamoDBConsumerWorker implements Callable<Void> {
             do {
                 writeItemResult = client.batchWriteItem(req);
                 unprocessedItems = writeItemResult.getUnprocessedItems();
-                consumedCapacities
-                        .addAll(writeItemResult.getConsumedCapacity());
+                consumedCapacities.addAll(writeItemResult.getConsumedCapacity());
 
                 if (unprocessedItems != null) {
                     req.setRequestItems(unprocessedItems);

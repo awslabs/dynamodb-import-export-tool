@@ -12,7 +12,7 @@
  * express or implied. See the License for the specific language governing
  * permissions and limitations under the License.
  */
-package com.amazonaws.dynamodb.bootstrap;
+package com.amazonaws.dynamodb.bootstrap.consumer;
 
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -22,8 +22,10 @@ import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
+import com.amazonaws.dynamodb.bootstrap.SegmentedScanResult;
 import com.amazonaws.dynamodb.bootstrap.constants.BootstrapConstants;
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
+import com.amazonaws.dynamodb.bootstrap.worker.DynamoDBConsumerWorker;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.BatchWriteItemRequest;
 import com.amazonaws.services.dynamodbv2.model.PutRequest;
@@ -38,15 +40,14 @@ import com.google.common.util.concurrent.RateLimiter;
  */
 public class DynamoDBConsumer extends AbstractLogConsumer {
 
-    private final AmazonDynamoDBClient client;
+    private final AmazonDynamoDB client;
     private final String tableName;
     private final RateLimiter rateLimiter;
 
     /**
      * Class to consume logs and write them to a DynamoDB table.
      */
-    public DynamoDBConsumer(AmazonDynamoDBClient client, String tableName,
-            double rateLimit, ExecutorService exec) {
+    public DynamoDBConsumer(AmazonDynamoDB client, String tableName, double rateLimit, ExecutorService exec) {
         this.client = client;
         this.tableName = tableName;
         this.rateLimiter = RateLimiter.create(rateLimit);
@@ -62,17 +63,13 @@ public class DynamoDBConsumer extends AbstractLogConsumer {
     @Override
     public Future<Void> writeResult(SegmentedScanResult result) {
         Future<Void> jobSubmission = null;
-        List<BatchWriteItemRequest> batches = splitResultIntoBatches(
-                result.getScanResult(), tableName);
+        List<BatchWriteItemRequest> batches = splitResultIntoBatches(result.getScanResult(), tableName);
         Iterator<BatchWriteItemRequest> batchesIterator = batches.iterator();
         while (batchesIterator.hasNext()) {
             try {
-                jobSubmission = exec
-                        .submit(new DynamoDBConsumerWorker(batchesIterator
-                                .next(), client, rateLimiter, tableName));
+                jobSubmission = exec.submit(new DynamoDBConsumerWorker(batchesIterator.next(), client, rateLimiter, tableName));
             } catch (NullPointerException npe) {
-                throw new NullPointerException(
-                        "Thread pool not initialized for LogStashExecutor");
+                throw new NullPointerException("Thread pool not initialized for LogStashExecutor");
             }
         }
         return jobSubmission;
@@ -82,13 +79,11 @@ public class DynamoDBConsumer extends AbstractLogConsumer {
      * Splits up a ScanResult into a list of BatchWriteItemRequests of size 25
      * items or less each.
      */
-    public static List<BatchWriteItemRequest> splitResultIntoBatches(
-            ScanResult result, String tableName) {
+    public static List<BatchWriteItemRequest> splitResultIntoBatches(ScanResult result, String tableName) {
         List<BatchWriteItemRequest> batches = new LinkedList<BatchWriteItemRequest>();
         Iterator<Map<String, AttributeValue>> it = result.getItems().iterator();
 
-        BatchWriteItemRequest req = new BatchWriteItemRequest()
-                .withReturnConsumedCapacity(ReturnConsumedCapacity.TOTAL);
+        BatchWriteItemRequest req = new BatchWriteItemRequest().withReturnConsumedCapacity(ReturnConsumedCapacity.TOTAL);
         List<WriteRequest> writeRequests = new LinkedList<WriteRequest>();
         int i = 0;
         while (it.hasNext()) {
@@ -99,8 +94,7 @@ public class DynamoDBConsumer extends AbstractLogConsumer {
             if (i == BootstrapConstants.MAX_BATCH_SIZE_WRITE_ITEM) {
                 req.addRequestItemsEntry(tableName, writeRequests);
                 batches.add(req);
-                req = new BatchWriteItemRequest()
-                        .withReturnConsumedCapacity(ReturnConsumedCapacity.TOTAL);
+                req = new BatchWriteItemRequest().withReturnConsumedCapacity(ReturnConsumedCapacity.TOTAL);
                 writeRequests = new LinkedList<WriteRequest>();
                 i = 0;
             }

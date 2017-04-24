@@ -12,7 +12,7 @@
  * express or implied. See the License for the specific language governing
  * permissions and limitations under the License.
  */
-package com.amazonaws.dynamodb.bootstrap;
+package com.amazonaws.dynamodb.bootstrap.items;
 
 import java.nio.ByteBuffer;
 import java.util.Iterator;
@@ -25,7 +25,6 @@ import com.amazonaws.services.dynamodbv2.model.ScanResult;
 
 /**
  * Class used to calculate the size of a DynamoDB item in bytes.
- * 
  */
 public class ItemSizeCalculator {
 
@@ -47,17 +46,19 @@ public class ItemSizeCalculator {
         }
         return size;
     }
-    
+
     public static int calculateScanResultSizeInBytes(ScanResult result) {
         final Iterator<Map<String, AttributeValue>> it = result.getItems().iterator();
         int totalBytes = 0;
-        while(it.hasNext()){
+        while (it.hasNext()) {
             totalBytes += calculateItemSizeInBytes(it.next());
         }
         return totalBytes;
     }
 
-    /** Calculate attribute value size */
+    /**
+     * Calculate attribute value size
+     */
     private static int calculateAttributeSizeInBytes(AttributeValue value) {
         int attrValSize = 0;
         if (value == null) {
@@ -98,8 +99,7 @@ public class ItemSizeCalculator {
         } else if (value.getNULL() != null) {
             attrValSize += 1;
         } else if (value.getM() != null) {
-            for (Map.Entry<String, AttributeValue> entry : value.getM()
-                    .entrySet()) {
+            for (Map.Entry<String, AttributeValue> entry : value.getM().entrySet()) {
                 attrValSize += entry.getKey().getBytes(BootstrapConstants.UTF8).length;
                 attrValSize += calculateAttributeSizeInBytes(entry.getValue());
                 attrValSize += BootstrapConstants.BASE_LOGICAL_SIZE_OF_NESTED_TYPES;

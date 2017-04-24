@@ -12,9 +12,14 @@
  * express or implied. See the License for the specific language governing
  * permissions and limitations under the License.
  */
-package com.amazonaws.dynamodb.bootstrap;
+package com.amazonaws.dynamodb.bootstrap.consumer;
 
-import static org.junit.Assert.*;
+import static org.easymock.EasyMock.expect;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.powermock.api.easymock.PowerMock.createMock;
+import static org.powermock.api.easymock.PowerMock.mockStatic;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
@@ -26,14 +31,10 @@ import org.powermock.core.classloader.annotations.PowerMockIgnore;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
-import static org.powermock.api.easymock.PowerMock.*;
-import static org.easymock.EasyMock.expect;
-
-import com.amazonaws.dynamodb.bootstrap.BlockingQueueConsumer;
+import com.amazonaws.dynamodb.bootstrap.items.DynamoDBEntryWithSize;
 
 /**
  * Unit Tests for LogStashExecutor
- * 
  */
 @RunWith(PowerMockRunner.class)
 @PrepareForTest(BlockingQueueConsumer.class)
@@ -52,8 +53,7 @@ public class BlockingQueueConsumerTest {
         mockStatic(Executors.class);
         ExecutorService mockThreadPool = createMock(ExecutorService.class);
 
-        expect(Executors.newFixedThreadPool(totalThreads)).andReturn(
-                mockThreadPool);
+        expect(Executors.newFixedThreadPool(totalThreads)).andReturn(mockThreadPool);
 
         BlockingQueue<DynamoDBEntryWithSize> queue = logExec.getQueue();
 

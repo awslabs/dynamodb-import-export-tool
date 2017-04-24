@@ -14,11 +14,11 @@
  */
 package com.amazonaws.dynamodb.bootstrap;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertSame;
 
 import org.junit.Test;
 
-import com.amazonaws.dynamodb.bootstrap.SegmentedScanResult;
 import com.amazonaws.services.dynamodbv2.model.ScanResult;
 
 /**
@@ -33,8 +33,7 @@ public class SegmentedScanResultTest {
     public void test() {
         ScanResult result = new ScanResult();
         int numSegments = 3;
-        SegmentedScanResult segmentedScanResult = new SegmentedScanResult(
-                result, numSegments);
+        SegmentedScanResult segmentedScanResult = new SegmentedScanResult(result, numSegments);
 
         assertSame(result, segmentedScanResult.getScanResult());
         assertEquals(numSegments, segmentedScanResult.getSegment());

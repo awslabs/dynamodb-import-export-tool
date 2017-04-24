@@ -12,7 +12,7 @@
  * express or implied. See the License for the specific language governing
  * permissions and limitations under the License.
  */
-package com.amazonaws.dynamodb.bootstrap;
+package com.amazonaws.dynamodb.bootstrap.consumer;
 
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
@@ -22,6 +22,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 
+import com.amazonaws.dynamodb.bootstrap.SegmentedScanResult;
 import com.amazonaws.dynamodb.bootstrap.constants.BootstrapConstants;
 
 /**
@@ -36,26 +37,23 @@ public abstract class AbstractLogConsumer {
     /**
      * Logger for the DynamoDBBootstrapWorker.
      */
-    private static final Logger LOGGER = LogManager
-            .getLogger(AbstractLogConsumer.class);
+    private static final Logger LOGGER = LogManager.getLogger(AbstractLogConsumer.class);
 
     /**
      * Writes the result of a scan to another endpoint asynchronously. Will call
      * getWorker to determine what job to submit with the result.
-     * 
-     * @param <result>
-     *            the SegmentedScanResult to asynchronously write to another
-     *            endpoint.
+     *
+     * @param <result> the SegmentedScanResult to asynchronously write to another
+     *                 endpoint.
      */
     public abstract Future<Void> writeResult(SegmentedScanResult result);
 
     /**
      * Shuts the thread pool down.
-     * 
-     * @param <awaitTermination>
-     *            If true, this method waits for the threads in the pool to
-     *            finish. If false, this thread pool shuts down without
-     *            finishing their current tasks.
+     *
+     * @param <awaitTermination> If true, this method waits for the threads in the pool to
+     *                           finish. If false, this thread pool shuts down without
+     *                           finishing their current tasks.
      */
     public void shutdown(boolean awaitTermination) {
         if (awaitTermination) {
@@ -67,8 +65,7 @@ public abstract class AbstractLogConsumer {
                 }
             } catch (InterruptedException e) {
                 interrupted = true;
-                LOGGER.warn("Threadpool was interrupted when trying to shutdown: "
-                        + e.getMessage());
+                LOGGER.warn("Threadpool was interrupted when trying to shutdown: " + e.getMessage());
             } finally {
                 if (interrupted)
                     Thread.currentThread().interrupt();

@@ -12,7 +12,7 @@
  * express or implied. See the License for the specific language governing
  * permissions and limitations under the License.
  */
-package com.amazonaws.dynamodb.bootstrap;
+package com.amazonaws.dynamodb.bootstrap.consumer;
 
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -20,7 +20,9 @@ import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import com.amazonaws.dynamodb.bootstrap.DynamoDBEntryWithSize;
+import com.amazonaws.dynamodb.bootstrap.SegmentedScanResult;
+import com.amazonaws.dynamodb.bootstrap.items.DynamoDBEntryWithSize;
+import com.amazonaws.dynamodb.bootstrap.worker.BlockingQueueWorker;
 
 /**
  * This class implements ILogConsumer, and when called to writeResult, it will
@@ -48,8 +50,7 @@ public class BlockingQueueConsumer extends AbstractLogConsumer {
         try {
             jobSubmission = exec.submit(new BlockingQueueWorker(queue, result));
         } catch (NullPointerException npe) {
-            throw new NullPointerException(
-                    "Thread pool not initialized for LogStashExecutor");
+            throw new NullPointerException("Thread pool not initialized for LogStashExecutor");
         }
         return jobSubmission;
     }
