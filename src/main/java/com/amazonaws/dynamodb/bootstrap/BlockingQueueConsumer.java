@@ -33,13 +33,8 @@ public class BlockingQueueConsumer extends AbstractLogConsumer {
     private BlockingQueue<DynamoDBEntryWithSize> queue;
 
     public BlockingQueueConsumer(int numThreads) {
+        super(Math.max(numThreads, Runtime.getRuntime().availableProcessors()));
         this.queue = new ArrayBlockingQueue<DynamoDBEntryWithSize>(20);
-        int numProcessors = Runtime.getRuntime().availableProcessors();
-        if (numProcessors > numThreads) {
-            numThreads = numProcessors;
-        }
-        this.threadPool = Executors.newFixedThreadPool(numThreads);
-        this.exec = new ExecutorCompletionService<Void>(threadPool);
     }
 
     @Override

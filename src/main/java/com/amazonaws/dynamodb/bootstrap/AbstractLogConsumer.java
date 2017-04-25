@@ -14,8 +14,10 @@
  */
 package com.amazonaws.dynamodb.bootstrap;
 
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
@@ -30,8 +32,9 @@ import com.amazonaws.dynamodb.bootstrap.constants.BootstrapConstants;
  */
 public abstract class AbstractLogConsumer {
 
-    public ExecutorCompletionService<Void> exec;
-    protected ExecutorService threadPool;
+    // only keep a reference to the thread pool because we need to be able to shut it down
+    private ExecutorService threadPool;
+    protected ExecutorCompletionService<Void> exec;
 
     /**
      * Logger for the DynamoDBBootstrapWorker.
@@ -39,11 +42,23 @@ public abstract class AbstractLogConsumer {
     private static final Logger LOGGER = LogManager
             .getLogger(AbstractLogConsumer.class);
 
+
+
+    protected AbstractLogConsumer(int numThreads) {
+        this.threadPool = Executors.newFixedThreadPool(numThreads);
+        this.exec = new ExecutorCompletionService<Void>(threadPool, new ArrayBlockingQueue<Future<Void>>(numThreads));
+    }
+
+    protected AbstractLogConsumer(ExecutorCompletionService<Void> exec, ExecutorService threadPool) {
+        this.threadPool = threadPool;
+        this.exec = exec;
+    }
+
     /**
      * Writes the result of a scan to another endpoint asynchronously. Will call
      * getWorker to determine what job to submit with the result.
      * 
-     * @param <result>
+     * @param result
      *            the SegmentedScanResult to asynchronously write to another
      *            endpoint.
      */
@@ -52,7 +67,7 @@ public abstract class AbstractLogConsumer {
     /**
      * Shuts the thread pool down.
      * 
-     * @param <awaitTermination>
+     * @param awaitTermination
      *            If true, this method waits for the threads in the pool to
      *            finish. If false, this thread pool shuts down without
      *            finishing their current tasks.

@@ -91,6 +91,7 @@ public class CommandLineInterface {
 
         TableDescription readTableDescription = sourceClient.describeTable(
                 sourceTable).getTable();
+
         TableDescription writeTableDescription = destinationClient
                 .describeTable(destinationTable).getTable();
         int numSegments = 10;
@@ -107,11 +108,27 @@ public class CommandLineInterface {
         final double writeThroughput = calculateThroughput(
                 writeTableDescription, writeThroughputRatio, false);
 
+        final double averageItemSize;
+        if (readTableDescription.getItemCount().equals(Long.valueOf(0L))) {
+            averageItemSize = 0.0;
+        } else {
+            averageItemSize = readTableDescription.getTableSizeBytes().doubleValue() / readTableDescription.getItemCount().doubleValue();
+        }
+        final double averageWcuPerItem = Math.ceil(averageItemSize / 1024.0);
+        final double averageWcuPerBatchWriteItem = averageWcuPerItem * 25;
+        final int parallelBatchWriteItems = (int) Math.min(1L, Math.round(Math.ceil(writeThroughput / averageWcuPerBatchWriteItem)));
+        if (maxWriteThreads > parallelBatchWriteItems) {
+            LOGGER.warn("Expected WCU per BatchWriteItem call is " + averageWcuPerBatchWriteItem
+                    + " so this configuration could support up to " + parallelBatchWriteItems
+                    + " parallel BatchWriteItem calls. However, maxWriteThreads(" + maxWriteThreads
+                    + ") was greater than this expectation.");
+        }
+
         try {
             ExecutorService sourceExec = getSourceThreadPool(numSegments);
             ExecutorService destinationExec = getDestinationThreadPool(maxWriteThreads);
             DynamoDBConsumer consumer = new DynamoDBConsumer(destinationClient,
-                    destinationTable, writeThroughput, destinationExec);
+                    destinationTable, writeThroughput, destinationExec, maxWriteThreads);
 
             final DynamoDBBootstrapWorker worker = new DynamoDBBootstrapWorker(
                     sourceClient, readThroughput, sourceTable, sourceExec,
