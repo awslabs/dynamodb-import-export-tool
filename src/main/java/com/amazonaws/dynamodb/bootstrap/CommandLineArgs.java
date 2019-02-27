@@ -63,7 +63,7 @@ public class CommandLineArgs {
     }
 
     public static final String READ_THROUGHPUT_RATIO = "--readThroughputRatio";
-    @Parameter(names = READ_THROUGHPUT_RATIO, description = "Percentage of total read throughput to scan the source table", required = true)
+    @Parameter(names = READ_THROUGHPUT_RATIO, description = "Percentage of total read throughput to scan the source table (> 0.0, <= 1.0)", required = true)
     private double readThroughputRatio;
 
     public double getReadThroughputRatio() {
@@ -71,7 +71,7 @@ public class CommandLineArgs {
     }
 
     public static final String WRITE_THROUGHPUT_RATIO = "--writeThroughputRatio";
-    @Parameter(names = WRITE_THROUGHPUT_RATIO, description = "Percentage of total write throughput to write the destination table", required = true)
+    @Parameter(names = WRITE_THROUGHPUT_RATIO, description = "Percentage of total write throughput to write the destination table (> 0.0, <= 1.0)", required = true)
     private double writeThroughputRatio;
 
     public double getWriteThroughputRatio() {
