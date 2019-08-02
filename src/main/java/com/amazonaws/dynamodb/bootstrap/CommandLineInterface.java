@@ -39,7 +39,7 @@ public class CommandLineInterface {
     /**
      * Main class to begin transferring data from one DynamoDB table to another
      * DynamoDB table.
-     * 
+     *
      * @param args
      */
     public static void main(String[] args) {
@@ -65,6 +65,8 @@ public class CommandLineInterface {
         final String destinationEndpoint = params.getDestinationEndpoint();
         final String destinationTable = params.getDestinationTable();
         final String sourceTable = params.getSourceTable();
+        final double onDemandReadCapacityUnits = params.getOnDemandReadCapacityUnits();
+        final double onDemandWriteCapacityUnits = params.getOnDemandWriteCapacityUnits();
         final double readThroughputRatio = params.getReadThroughputRatio();
         final double writeThroughputRatio = params.getWriteThroughputRatio();
         final int maxWriteThreads = params.getMaxWriteThreads();
@@ -94,9 +96,9 @@ public class CommandLineInterface {
         }
 
         final double readThroughput = calculateThroughput(readTableDescription,
-                readThroughputRatio, true);
-        final double writeThroughput = calculateThroughput(
-                writeTableDescription, writeThroughputRatio, false);
+                onDemandReadCapacityUnits, readThroughputRatio, true);
+        final double writeThroughput = calculateThroughput(writeTableDescription,
+                onDemandWriteCapacityUnits, writeThroughputRatio, false);
 
         try {
             ExecutorService sourceExec = getSourceThreadPool(numSegments);
@@ -126,14 +128,24 @@ public class CommandLineInterface {
      * specified DynamoDB table provisioned throughput.
      */
     private static double calculateThroughput(
-            TableDescription tableDescription, double throughputRatio,
-            boolean read) {
+            TableDescription tableDescription, double onDemandCapacityUnits,
+            double throughputRatio, boolean read) {
+
+        double capacityUnits = 0.0;
+
         if (read) {
-            return tableDescription.getProvisionedThroughput()
-                    .getReadCapacityUnits() * throughputRatio;
+            capacityUnits = tableDescription.getProvisionedThroughput()
+                    .getReadCapacityUnits();
+        } else {
+            capacityUnits = tableDescription.getProvisionedThroughput()
+                    .getWriteCapacityUnits();
         }
-        return tableDescription.getProvisionedThroughput()
-                .getWriteCapacityUnits() * throughputRatio;
+
+        if (capacityUnits < 1.0) {
+            capacityUnits = onDemandCapacityUnits;
+        }
+
+        return capacityUnits * throughputRatio;
     }
 
     /**

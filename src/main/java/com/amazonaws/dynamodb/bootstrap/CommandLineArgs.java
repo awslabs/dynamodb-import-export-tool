@@ -53,8 +53,24 @@ public class CommandLineArgs {
         return destinationTable;
     }
 
+    public static final String READ_CAPACITY_UNITS = "--onDemandReadCapacityUnits";
+    @Parameter(names = READ_CAPACITY_UNITS, description = "The number of read capacity units used to scan the source table (only used if table is `on demand`; default = 50.0)", required = false)
+    private double onDemandReadCapacityUnits = 50.0;
+
+    public double getOnDemandReadCapacityUnits() {
+        return onDemandReadCapacityUnits;
+    }
+
+    public static final String WRITE_CAPACITY_UNITS = "--onDemandWriteCapacityUnits";
+    @Parameter(names = WRITE_CAPACITY_UNITS, description = "The number of write capacity units used to write the destination table (only used if table is `on demand`; default = 50.0)", required = false)
+    private double onDemandWriteCapacityUnits = 50.0;
+
+    public double getOnDemandWriteCapacityUnits() {
+        return onDemandWriteCapacityUnits;
+    }
+
     public static final String READ_THROUGHPUT_RATIO = "--readThroughputRatio";
-    @Parameter(names = READ_THROUGHPUT_RATIO, description = "Percentage of total read throughput to scan the source table", required = true)
+    @Parameter(names = READ_THROUGHPUT_RATIO, description = "Percentage of total read throughput to scan the source table (> 0.0, <= 1.0)", required = true)
     private double readThroughputRatio;
 
     public double getReadThroughputRatio() {
@@ -62,7 +78,7 @@ public class CommandLineArgs {
     }
 
     public static final String WRITE_THROUGHPUT_RATIO = "--writeThroughputRatio";
-    @Parameter(names = WRITE_THROUGHPUT_RATIO, description = "Percentage of total write throughput to write the destination table", required = true)
+    @Parameter(names = WRITE_THROUGHPUT_RATIO, description = "Percentage of total write throughput to write the destination table (> 0.0, <= 1.0)", required = true)
     private double writeThroughputRatio;
 
     public double getWriteThroughputRatio() {
@@ -92,7 +108,7 @@ public class CommandLineArgs {
     public int getSection() {
         return section;
     }
-    
+
     public static final String CONSISTENT_SCAN = "--consistentScan";
     @Parameter(names = CONSISTENT_SCAN, description = "Use this flag to use strongly consistent scan. If the flag is not used it will default to eventually consistent scan")
     private boolean consistentScan = false;
