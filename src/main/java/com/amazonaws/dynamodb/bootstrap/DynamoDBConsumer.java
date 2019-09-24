@@ -9,6 +9,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -37,12 +38,11 @@ public class DynamoDBConsumer extends AbstractLogConsumer {
      * Class to consume logs and write them to a DynamoDB table.
      */
     public DynamoDBConsumer(AmazonDynamoDBClient client, String tableName,
-            double rateLimit, ExecutorService exec) {
+            double rateLimit, ExecutorService exec, int parallelBatchWriteItems) {
+        super(new ExecutorCompletionService<Void>(exec, new ArrayBlockingQueue<Future<Void>>(parallelBatchWriteItems)), exec);
         this.client = client;
         this.tableName = tableName;
         this.rateLimiter = RateLimiter.create(rateLimit);
-        super.threadPool = exec;
-        super.exec = new ExecutorCompletionService<Void>(threadPool);
     }
 
     /**

@@ -1,7 +1,7 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.amazonaws</groupId>
-    <version>1.0.1</version>
+    <version>1.0.2-SNAPSHOT</version>
     <artifactId>dynamodb-import-export-tool</artifactId>
     <packaging>jar</packaging>
     <name>DynamoDB Import Export Tool</name>
@@ -9,6 +9,7 @@
     <description>Exports DynamoDB items via parallel scan into a blocking queue, then consumes the queue and import DynamoDB items into a replica table using asynchronous writes.</description>
     <scm>
         <url>https://github.com/awslabs/dynamodb-import-export-tool.git</url>
+        <tag>1.0.2-SNAPSHOT</tag>
     </scm>
     <properties>
         <aws.java.sdk.version>1.10.10</aws.java.sdk.version>
