@@ -9,7 +9,7 @@ import com.amazonaws.services.dynamodbv2.model.ScanResult;
 
 /**
  * Encapsulates segment number in scan result
- * 
+ *
  */
 public class SegmentedScanResult {
     private final ScanResult result;

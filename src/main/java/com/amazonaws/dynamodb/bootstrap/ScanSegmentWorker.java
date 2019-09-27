@@ -18,7 +18,7 @@ import com.google.common.util.concurrent.RateLimiter;
  * This class executes multiple scan requests on one segment of a table in
  * series, as a runnable. Instances meant to be used as tasks of the worker
  * thread pool for parallel scans.
- * 
+ *
  */
 public class ScanSegmentWorker implements Callable<SegmentedScanResult> {
     private final ScanRequest request;
@@ -34,7 +34,6 @@ public class ScanSegmentWorker implements Callable<SegmentedScanResult> {
         this.client = client;
         this.rateLimiter = rateLimiter;
         this.hasNext = true;
-        this.exponentialBackoffTime = BootstrapConstants.INITIAL_RETRY_TIME_MILLISECONDS;
         lastConsumedCapacity = 256;
     }
 
@@ -53,7 +52,6 @@ public class ScanSegmentWorker implements Callable<SegmentedScanResult> {
             lastConsumedCapacity = result.getConsumedCapacity()
                     .getCapacityUnits().intValue();
         } else if (result.getScannedCount() != null && result.getCount() != null) {
-
             final boolean isConsistent = request.getConsistentRead();
             int itemSize = isConsistent ? BootstrapConstants.STRONGLY_CONSISTENT_READ_ITEM_SIZE
                     : BootstrapConstants.EVENTUALLY_CONSISTENT_READ_ITEM_SIZE;
@@ -82,6 +80,7 @@ public class ScanSegmentWorker implements Callable<SegmentedScanResult> {
     public ScanResult runWithBackoff() {
         ScanResult result = null;
         boolean interrupted = false;
+        exponentialBackoffTime = BootstrapConstants.INITIAL_RETRY_TIME_MILLISECONDS;
         try {
             do {
                 try {
@@ -92,7 +91,9 @@ public class ScanSegmentWorker implements Callable<SegmentedScanResult> {
                     } catch (InterruptedException ie) {
                         interrupted = true;
                     } finally {
-                        exponentialBackoffTime *= 2;
+                        exponentialBackoffTime = Math.min(
+                            BootstrapConstants.MAX_EXPONENTIAL_BACKOFF_TIME,
+                            exponentialBackoffTime * 2);
                     }
                     continue;
                 }

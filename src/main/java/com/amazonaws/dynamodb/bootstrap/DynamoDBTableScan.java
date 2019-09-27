@@ -30,10 +30,10 @@ public class DynamoDBTableScan {
     /**
      * This function copies a scan request for the number of segments and then
      * adds those workers to the executor service to begin scanning.
-     * 
+     *
      * @param totalSections
      * @param section
-     * 
+     *
      * @return <ParallelScanExecutor> the parallel scan executor to grab results
      *         when a segment is finished.
      */
@@ -41,8 +41,6 @@ public class DynamoDBTableScan {
             ScanRequest initialRequest, int numSegments, Executor executor,
             int section, int totalSections) {
         final int segments = Math.max(1, numSegments);
-        final ParallelScanExecutor completion = new ParallelScanExecutor(
-                executor, segments);
 
         int sectionSize = segments / totalSections;
         int start = sectionSize * section;
@@ -50,6 +48,9 @@ public class DynamoDBTableScan {
         if (section + 1 == totalSections) {
             end = segments;
         }
+        final int numberToComplete = end - start;
+        final ParallelScanExecutor completion = new ParallelScanExecutor(
+                executor, segments, numberToComplete);
 
         for (int segment = start; segment < end; segment++) {
             ScanRequest scanSegment = copyScanRequest(initialRequest)

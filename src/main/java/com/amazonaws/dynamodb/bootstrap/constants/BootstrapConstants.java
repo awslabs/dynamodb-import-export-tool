@@ -51,11 +51,6 @@ public class BootstrapConstants {
     public static final long MAX_EXPONENTIAL_BACKOFF_TIME = 2048;
 
     /**
-     * Max amount of retries before exiting or throwing exception.
-     */
-    public static final int MAX_RETRIES = 10;
-
-    /**
      * Initial retry time for an exponential back-off call in milliseconds.
      */
     public static final long INITIAL_RETRY_TIME_MILLISECONDS = 128;

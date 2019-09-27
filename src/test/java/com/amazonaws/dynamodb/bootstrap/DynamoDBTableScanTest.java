@@ -28,7 +28,7 @@ import com.google.common.util.concurrent.RateLimiter;
 
 /**
  * Unit Tests for DynamoDBTableScan
- * 
+ *
  */
 @RunWith(PowerMockRunner.class)
 @PrepareForTest({ RateLimiter.class, DynamoDBTableScan.class })
@@ -63,7 +63,7 @@ public class DynamoDBTableScanTest {
 
         expectNew(ScanSegmentWorker.class, mockClient, mockRateLimiter, req)
                 .andReturn(mockSegmentWorker);
-        expectNew(ParallelScanExecutor.class, mockExec, 1).andReturn(
+        expectNew(ParallelScanExecutor.class, mockExec, 1, 1).andReturn(
                 mockScanExecutor);
 
         mockScanExecutor.addWorker(mockSegmentWorker, 0);
@@ -71,9 +71,20 @@ public class DynamoDBTableScanTest {
         int segments2 = 3;
         ScanRequest testReq = scanner.copyScanRequest(req).withTotalSegments(
                 segments2);
-        expectNew(ParallelScanExecutor.class, mockExec, segments2).andReturn(
+
+        // [0,3) with 2 workers is split into [0,1) and [1,3)
+        expectNew(ParallelScanExecutor.class, mockExec, segments2, 1).andReturn(
                 mockScanExecutor);
-        for (int i = 0; i < segments2; i++) {
+        for (int i = 0; i < 1; i++) {
+            expectNew(ScanSegmentWorker.class, mockClient, mockRateLimiter,
+                    scanner.copyScanRequest(testReq).withSegment(i)).andReturn(
+                    mockSegmentWorker);
+            mockScanExecutor.addWorker(mockSegmentWorker, i);
+        }
+
+        expectNew(ParallelScanExecutor.class, mockExec, segments2, 2).andReturn(
+                mockScanExecutor);
+        for (int i = 1; i < segments2; i++) {
             expectNew(ScanSegmentWorker.class, mockClient, mockRateLimiter,
                     scanner.copyScanRequest(testReq).withSegment(i)).andReturn(
                     mockSegmentWorker);
@@ -82,7 +93,8 @@ public class DynamoDBTableScanTest {
 
         replayAll();
         scanner.getParallelScanCompletionService(req, segments, mockExec, 0, 1);
-        scanner.getParallelScanCompletionService(req, segments2, mockExec, 0, 1);
+        scanner.getParallelScanCompletionService(req, segments2, mockExec, 0, 2);
+        scanner.getParallelScanCompletionService(req, segments2, mockExec, 1, 2);
         verifyAll();
     }
 

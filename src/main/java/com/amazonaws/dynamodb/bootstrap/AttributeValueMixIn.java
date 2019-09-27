@@ -15,7 +15,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * Mixin for attribute values to stay all capital when mapping them as strings.
- * 
+ *
  */
 public abstract class AttributeValueMixIn {
         @JsonProperty("S") public abstract String getS();

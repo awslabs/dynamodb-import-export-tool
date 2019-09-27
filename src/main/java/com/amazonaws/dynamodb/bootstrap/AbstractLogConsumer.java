@@ -33,7 +33,7 @@ public abstract class AbstractLogConsumer {
     /**
      * Writes the result of a scan to another endpoint asynchronously. Will call
      * getWorker to determine what job to submit with the result.
-     * 
+     *
      * @param <result>
      *            the SegmentedScanResult to asynchronously write to another
      *            endpoint.
@@ -42,7 +42,7 @@ public abstract class AbstractLogConsumer {
 
     /**
      * Shuts the thread pool down.
-     * 
+     *
      * @param <awaitTermination>
      *            If true, this method waits for the threads in the pool to
      *            finish. If false, this thread pool shuts down without

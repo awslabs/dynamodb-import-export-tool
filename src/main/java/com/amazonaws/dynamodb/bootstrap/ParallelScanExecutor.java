@@ -15,18 +15,20 @@ import java.util.concurrent.ExecutionException;
  * This class executes multiple scan requests on one segment of a table in
  * series, as a runnable. Instances meant to be used as tasks of the worker
  * thread pool for parallel scans.
- * 
+ *
  */
 public class ParallelScanExecutor {
     private final BitSet finished;
     private final ScanSegmentWorker[] workers;
     private final ExecutorCompletionService<SegmentedScanResult> exec;
+    private final int numberToComplete;
 
-    public ParallelScanExecutor(Executor executor, int segments) {
+    public ParallelScanExecutor(Executor executor, int segments, int numberToComplete) {
         this.exec = new ExecutorCompletionService<SegmentedScanResult>(executor);
         this.finished = new BitSet(segments);
         this.finished.clear();
         this.workers = new ScanSegmentWorker[segments];
+        this.numberToComplete = numberToComplete;
     }
 
     /**
@@ -47,14 +49,14 @@ public class ParallelScanExecutor {
      */
     public boolean finished() {
         synchronized (finished) {
-            return finished.cardinality() == workers.length;
+            return finished.cardinality() == numberToComplete;
         }
     }
 
     /**
      * This method gets a segmentedScanResult and submits the next scan request
      * for that segment, if there is one.
-     * 
+     *
      * @return the next available ScanResult
      * @throws ExecutionException
      *             if one of the segment pages threw while executing

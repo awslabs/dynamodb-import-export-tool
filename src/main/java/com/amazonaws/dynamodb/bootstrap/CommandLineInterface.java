@@ -39,7 +39,7 @@ public class CommandLineInterface {
     /**
      * Main class to begin transferring data from one DynamoDB table to another
      * DynamoDB table.
-     * 
+     *
      * @param args
      */
     public static void main(String[] args) {
@@ -97,6 +97,9 @@ public class CommandLineInterface {
                 readThroughputRatio, true);
         final double writeThroughput = calculateThroughput(
                 writeTableDescription, writeThroughputRatio, false);
+
+        LOGGER.info("Calculated read throughput: " + readThroughput);
+        LOGGER.info("Calculated write throughput: " + writeThroughput);
 
         try {
             ExecutorService sourceExec = getSourceThreadPool(numSegments);
